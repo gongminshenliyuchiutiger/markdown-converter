@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown語法神轉換系統</title>
+    <!-- Font Awesome CSS CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" />
+    <!-- marked.js for Markdown to HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- FileSaver.js for saving files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- PptxGenJS for PPTX generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+    <!-- html-to-docx-ts -->
+    <script src="https://cdn.jsdelivr.net/npm/html-to-docx-ts@1.8.0/dist/browser/html-to-docx.umd.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .preview-content {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            background: #ffffff;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .preview-content h1 { font-size: 1.75rem; font-weight: 700; margin: 1rem 0 0.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.25rem; }
+        .preview-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1rem 0 0.5rem; border-bottom: 1px solid #e5e7eb; }
+        .preview-content h3 { font-size: 1.25rem; font-weight: 600; margin: 0.8rem 0 0.4rem; }
+        .preview-content p { margin-bottom: 0.8rem; line-height: 1.6; }
+        .preview-content ul, .preview-content ol { margin-left: 1.5rem; margin-bottom: 0.8rem; }
+        .preview-content ul { list-style-type: disc; }
+        .preview-content ol { list-style-type: decimal; }
+        .preview-content blockquote { border-left: 4px solid #4b6cb7; padding-left: 1rem; margin: 0 0 0.8rem; color: #4b5568; font-style: italic; }
+        .preview-content pre {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+        }
+        .preview-content code {
+            background: #f3f4f6;
+            color: #4b6cb7;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 85%;
+        }
+        .preview-content pre code { background: transparent; padding: 0; }
+        .preview-content table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; border: 1px solid #e5e7eb; }
+        .preview-content th, .preview-content td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+        .preview-content th { background: #f3f4f6; font-weight: 600; }
+        .preview-content tr:nth-child(even) { background: #f9fafb; }
+        .preview-content img { max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 0.5rem; }
+        .preview-content hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+        .btn-primary {
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            background: #4b6cb7;
+            color: white;
+            border-radius: 0.5rem;
+        }
+        .btn-primary:hover { background: #3b5998; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 0.5rem 0.5rem 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-bottom: -1px;
+            background: #f3f4f6;
+        }
+        .tab-button.active { background: #ffffff; color: #4b6cb7; border-color: #e5e7eb; }
+        .tab-button.inactive { background: #e5e7eb; color: #6b7280; }
+        .tab-button.inactive:hover { background: #d1d5db; }
+        .preview-pane { display: none; }
+        .preview-pane.active { display: block; }
+        .placeholder-content {
+            padding: 1rem;
+            border: 2px dashed #e5e7eb;
+            border-radius: 0.5rem;
+            background: #ffffff;
+            color: #6b7280;
+        }
+        .placeholder-content p { margin-bottom: 0.5rem; }
+        .placeholder-content ul { margin: 0.5rem 0 0 1.25rem; list-style-type: disc; }
+        .placeholder-content code { background: #f3f4f6; color: #4b6cb7; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.8em; }
+        #syntax-guide-container { display: flex; gap: 1.5rem; }
+        #syntax-guide-nav { width: 220px; flex-shrink: 0; }
+        #syntax-guide-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            background: #ffffff;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        #syntax-guide-nav li a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
+            color: #6b7280;
+            text-decoration: none;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+        #syntax-guide-nav li a:hover, #syntax-guide-nav li a.active {
+            background: #f3f4f6;
+            color: #4b6cb7;
+            font-weight: 500;
+        }
+        #syntax-content {
+            flex-grow: 1;
+            max-height: 600px;
+            overflow-y: auto;
+            scroll-padding-top: 1rem;
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        #syntax-content h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4b6cb7;
+            margin: 1.5rem 0 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            scroll-margin-top: 1rem;
+        }
+        #syntax-content h4:first-child { margin-top: 0; }
+        .syntax-textarea {
+            width: 100%;
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            resize: none;
+            border: none;
+            margin-top: 0.5rem;
+            transition: box-shadow 0.2s ease;
+        }
+        .syntax-textarea:hover { box-shadow: 0 0 0 2px #e5e7eb; }
+        .syntax-textarea:focus { outline: none; box-shadow: 0 0 0 2px #4b6cb7; }
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #4b6cb7;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+        }
+        .copy-btn:hover { background: #3b5998; transform: translateY(-1px); }
+        .copy-btn.copied { background: #2f855a; }
+        .syntax-section { margin-bottom: 2rem; }
+        @media (max-width: 768px) {
+            #syntax-guide-container { flex-direction: column; }
+            #syntax-guide-nav { width: 100%; position: static; max-height: none; }
+            #syntax-guide-nav ul { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+            #syntax-guide-nav li a { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen text-gray-900">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Markdown 語法神轉換系統</h1>
+            <p class="text-lg text-gray-600">將 Markdown 輕鬆轉為 HTML、Word (.docx) 及 PPT (.pptx)</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Section -->
+            <section class="bg-gray-100 rounded-xl shadow-md p-6 flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">輸入 Markdown</h2>
+                <textarea
+                    id="markdown-input"
+                    class="w-full flex-grow p-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white text-base leading-relaxed font-mono resize-none transition-all duration-300"
+                    placeholder="在此輸入 Markdown 語法... (或參考下方說明)"
+                    rows="20"
+                ></textarea>
+                <div class="mt-4 text-right">
+                    <button id="convert-btn" class="btn-primary font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 shadow-md">
+                        <i class="fas fa-sync-alt mr-2"></i> 轉換預覽
+                    </button>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="bg-gray-100 rounded-xl shadow-md p-6 flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">預覽與下載</h2>
+                <div class="flex mb-0 border-b border-gray-200">
+                    <button id="html-tab" class="tab-button active"><i class="fas fa-code mr-2"></i>HTML 預覽</button>
+                    <button id="word-tab" class="tab-button inactive ml-1"><i class="fas fa-file-word mr-2"></i>Word 選項</button>
+                    <button id="ppt-tab" class="tab-button inactive ml-1"><i class="fas fa-file-powerpoint mr-2"></i>PPT 選項</button>
+                </div>
+
+                <div id="preview-container" class="flex-grow mt-0">
+                    <!-- HTML Preview Pane -->
+                    <div id="html-preview-pane" class="preview-pane active">
+                        <div id="html-preview" class="preview-content">
+                            <p class="text-gray-500 italic p-4 text-center">點擊「轉換預覽」按鈕來查看結果</p>
+                        </div>
+                    </div>
+                    <!-- Word Preview Pane -->
+                    <div id="word-preview-pane" class="preview-pane">
+                        <div class="preview-content">
+                            <div class="placeholder-content">
+                                <p class="font-semibold text-lg text-gray-800">Word 文件 (.docx) 下載</p>
+                                <p>點擊「下載 Word」按鈕，將 Markdown 轉為 <code>.docx</code> 文件。</p>
+                                <p class="font-medium mt-3">轉換說明：</p>
+                                <ul>
+                                    <li>保留標題、段落、列表、粗體/斜體、表格等格式。</li>
+                                    <li>圖片需為公開 URL，否則可能無法轉換。</li>
+                                    <li>複雜 CSS 樣式可能簡化。</li>
+                                    <li>程式碼區塊轉為單一字體文字。</li>
+                                </ul>
+                                <p class="mt-3 text-sm text-red-500 font-medium">注意：客戶端轉換效果有限，請檢查輸出文件。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- PPT Preview Pane -->
+                    <div id="ppt-preview-pane" class="preview-pane">
+                        <div class="preview-content">
+                            <div class="placeholder-content">
+                                <p class="font-semibold text-lg text-gray-800">PPT 文件 (.pptx) 下載</p>
+                                <p>點擊「下載 PPT」按鈕，將 Markdown 轉為 <code>.pptx</code> 文件。</p>
+                                <p class="font-medium mt-3">投影片生成規則：</p>
+                                <ul>
+                                    <li><code># H1</code> 或 <code>---</code> 開始新投影片。</li>
+                                    <li><code>## H2</code> 作為內容標題。</li>
+                                    <li>段落、列表、表格、程式碼區塊加入內容區。</li>
+                                    <li>表格和程式碼區塊格式可能簡化。</li>
+                                </ul>
+                                <p class="mt-3 text-sm text-red-500 font-medium">注意：依賴 Markdown 結構，請檢查輸出簡報。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-200 flex flex-wrap justify-center gap-3">
+                    <button id="download-html" class="btn-primary font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 shadow-md">
+                        <i class="fas fa-file-code mr-2"></i> 下載 HTML
+                    </button>
+                    <button id="download-word" class="btn-primary font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 shadow-md">
+                        <i class="fas fa-file-word mr-2"></i> 下載 Word
+                    </button>
+                    <button id="download-ppt" class="btn-primary font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 shadow-md">
+                        <i class="fas fa-file-powerpoint mr-2"></i> 下載 PPT
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Markdown Syntax Guide -->
+        <section class="mt-10 bg-gray-100 rounded-xl shadow-md p-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-5 text-center">Markdown 語法說明</h2>
+            <div id="syntax-guide-container">
+                <nav id="syntax-guide-nav">
+                    <p class="text-sm font-semibold text-gray-600 mb-2">快速導覽：</p>
+                    <ul>
+                        <li><a href="#md-headings">標題 (H1-H6)</a></li>
+                        <li><a href="#md-paragraphs">段落與換行</a></li>
+                        <li><a href="#md-text-styles">字體效果</a></li>
+                        <li><a href="#md-blockquotes">引文</a></li>
+                        <li><a href="#md-lists">列表 (有序/無序)</a></li>
+                        <li><a href="#md-nested-lists">巢狀列表</a></li>
+                        <li><a href="#md-links">連結</a></li>
+                        <li><a href="#md-autolinks">簡易超連結</a></li>
+                        <li><a href="#md-ref-links">參考連結</a></li>
+                        <li><a href="#md-hr">分隔線</a></li>
+                        <li><a href="#md-code">程式碼</a></li>
+                        <li><a href="#md-images">圖片</a></li>
+                        <li><a href="#md-image-links">圖片連結</a></li>
+                        <li><a href="#md-tables">表格</a></li>
+                        <li><a href="#md-task-lists">核取方塊</a></li>
+                        <li><a href="#md-escaping">跳脫字元</a></li>
+                        <li><a href="#md-html">內嵌 HTML</a></li>
+                    </ul>
+                </nav>
+
+                <div id="syntax-content">
+                    <div class="syntax-section" id="md-headings">
+                        <h4>標題 (Headings H1-H6)</h4>
+                        <textarea class="syntax-textarea" rows="10" data-textarea-id="md-headings"># 這是一級標題 (H1)
+## 這是二級標題 (H2)
+### 這是三級標題 (H3)
+#### 這是四級標題 (H4)
+##### 這是五級標題 (H5)
+###### 這是六級標題 (H6)
+
+H1 標題替代語法
+===============
+
+H2 標題替代語法
+---------------</textarea>
+                        <button class="copy-btn" data-textarea-id="md-headings"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-paragraphs">
+                        <h4>段落與換行 (Paragraphs & Breaks)</h4>
+                        <textarea class="syntax-textarea" rows="8" data-textarea-id="md-paragraphs">這是第一個段落。單一換行不分段。
+這仍是第一段。
+
+空行開始新段落。
+
+這是第二段。
+
+行尾兩個空格加 Enter 強制換行。  
+像這樣。</textarea>
+                        <button class="copy-btn" data-textarea-id="md-paragraphs"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-text-styles">
+                        <h4>字體效果 (Emphasis)</h4>
+                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-text-styles">*斜體* 或 _斜體_
+**粗體** 或 __粗體__
+***粗斜體*** 或 ___粗斜體___
+~~刪除線~~</textarea>
+                        <button class="copy-btn" data-textarea-id="md-text-styles"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-blockquotes">
+                        <h4>引文 (Blockquotes)</h4>
+                        <textarea class="syntax-textarea" rows="8" data-textarea-id="md-blockquotes">> 引文區塊。
+> 可多行。
+>
+>> 巢狀引文。
+>
+> ### 引文內 Markdown
+> - 列表
+> - `程式碼`</textarea>
+                        <button class="copy-btn" data-textarea-id="md-blockquotes"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-lists">
+                        <h4>列表 (Lists)</h4>
+                        <textarea class="syntax-textarea" rows="8" data-textarea-id="md-lists">無序列表:
+* 項目一
+* 項目二
+  + 子項目
+- 項目三
+
+有序列表:
+1. 第一項
+2. 第二項
+   1. 子項目
+8. 數字不必連續</textarea>
+                        <button class="copy-btn" data-textarea-id="md-lists"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-nested-lists">
+                        <h4>巢狀列表 (Nested Lists)</h4>
+                        <textarea class="syntax-textarea" rows="6" data-textarea-id="md-nested-lists">- 層級 1
+  - 層級 2
+    - 層級 3
+      1. 層級 4
+    * 層級 3b
+* 層級 1b</textarea>
+                        <button class="copy-btn" data-textarea-id="md-nested-lists"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-links">
+                        <h4>連結 (Links)</h4>
+                        <textarea class="syntax-textarea" rows="2" data-textarea-id="md-links">[連結文字](https://google.com "標題")
+[無標題](https://github.com)</textarea>
+                        <button class="copy-btn" data-textarea-id="md-links"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-autolinks">
+                        <h4>簡易超連結 (Autolinks)</h4>
+                        <textarea class="syntax-textarea" rows="2" data-textarea-id="md-autolinks"><https://example.com>
+<email@example.com></textarea>
+                        <button class="copy-btn" data-textarea-id="md-autolinks"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-ref-links">
+                        <h4>參考連結 (Reference Links)</h4>
+                        <textarea class="syntax-textarea" rows="6" data-textarea-id="md-ref-links">[標籤一][1]
+[標籤二]
+[Google][]
+
+[1]: https://mozilla.org 'MDN'
+[標籤二]: https://wikipedia.org
+[Google]: https://google.com</textarea>
+                        <button class="copy-btn" data-textarea-id="md-ref-links"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-hr">
+                        <h4>分隔線 (Horizontal Rules)</h4>
+                        <textarea class="syntax-textarea" rows="3" data-textarea-id="md-hr">---
+***
+___</textarea>
+                        <button class="copy-btn" data-textarea-id="md-hr"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-code">
+                        <h4>程式碼 (Code)</h4>
+                        <textarea class="syntax-textarea" rows="8" data-textarea-id="md-code">行內: `var x = 10;`
+
+程式碼區塊:
+```javascript
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+}
+```
+
+    縮排程式碼
+    行二</textarea>
+                        <button class="copy-btn" data-textarea-id="md-code"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-images">
+                        <h4>圖片 (Images)</h4>
+                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-images">![替代文字](https://via.placeholder.com/150 "標題")
+![Logo][logo]
+
+[logo]: https://via.placeholder.com/50</textarea>
+                        <button class="copy-btn" data-textarea-id="md-images"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-image-links">
+                        <h4>圖片連結 (Linked Images)</h4>
+                        <textarea class="syntax-textarea" rows="1" data-textarea-id="md-image-links">[![替代文字](https://via.placeholder.com/80)](https://example.com)</textarea>
+                        <button class="copy-btn" data-textarea-id="md-image-links"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-tables">
+                        <h4>表格 (Tables)</h4>
+                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-tables">| 標題 1 | 標題 2 | 置中 | 靠右 |
+| :------ | :------ | :----: | ------: |
+| 內容 1  | 長內容  | 中間  | 右對齊 |
+| `程式碼`| *斜體* | **粗體** | 文字 |</textarea>
+                        <button class="copy-btn" data-textarea-id="md-tables"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-task-lists">
+                        <h4>核取方塊 (Task Lists)</h4>
+                        <textarea class="syntax-textarea" rows="3" data-textarea-id="md-task-lists">- [x] 已完成
+- [ ] 未完成
+  - [ ] 子任務</textarea>
+                        <button class="copy-btn" data-textarea-id="md-task-lists"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-escaping">
+                        <h4>跳脫字元 (Escaping)</h4>
+                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-escaping">\*星星\*
+\`code\`
+\# 非標題
+\\ 反斜線</textarea>
+                        <button class="copy-btn" data-textarea-id="md-escaping"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                    <div class="syntax-section" id="md-html">
+                        <h4>內嵌 HTML (Inline HTML)</h4>
+                        <textarea class="syntax-textarea" rows="3" data-textarea-id="md-html"><div style="color: blue;">
+  藍色文字
+</div></textarea>
+                        <button class="copy-btn" data-textarea-id="md-html"><i class="fas fa-copy mr-2"></i> 複製</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center mt-10 text-gray-600 text-sm">
+            Copyright © Liyuchiutiger Gongminshen
+        </footer>
+    </div>
+
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+    </script>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // State management
+            const state = {
+                currentHtmlContent: '',
+                cachedTokens: null,
+                isConverting: false,
+                initialPlaceholder: '<p class="text-gray-500 italic p-4 text-center">點擊「轉換預覽」按鈕來查看結果</p>'
+            };
+
+            // DOM elements
+            const elements = {
+                markdownInput: document.getElementById('markdown-input'),
+                convertBtn: document.getElementById('convert-btn'),
+                htmlPreview: document.getElementById('html-preview'),
+                downloadHtmlBtn: document.getElementById('download-html'),
+                downloadWordBtn: document.getElementById('download-word'),
+                downloadPptBtn: document.getElementById('download-ppt'),
+                htmlTab: document.getElementById('html-tab'),
+                wordTab: document.getElementById('word-tab'),
+                pptTab: document.getElementById('ppt-tab'),
+                htmlPreviewPane: document.getElementById('html-preview-pane'),
+                wordPreviewPane: document.getElementById('word-preview-pane'),
+                pptPreviewPane: document.getElementById('ppt-preview-pane'),
+                syntaxNavLinks: document.querySelectorAll('#syntax-guide-nav a'),
+                copyButtons: document.querySelectorAll('.copy-btn')
+            };
+
+            // Library availability
+            const libraries = {
+                marked: typeof marked !== 'undefined' ? marked : null,
+                FileSaver: typeof saveAs !== 'undefined' ? saveAs : null,
+                PptxGenJS: typeof PptxGenJS !== 'undefined' ? PptxGenJS : null,
+                HtmlToDocx: typeof HtmlToDocx !== 'undefined' ? HtmlToDocx : null
+            };
+
+            // Initialize
+            function init() {
+                if (!libraries.marked) {
+                    showError('Marked.js 未載入，無法解析 Markdown。請檢查網絡連接。');
+                    disableButtons();
+                    return;
+                }
+
+                // Configure Marked.js
+                libraries.marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    pedantic: false,
+                    sanitize: true // Sanitize HTML output
+                });
+
+                // Set initial state
+                elements.htmlPreview.innerHTML = state.initialPlaceholder;
+
+                // Check Font Awesome loading
+                checkFontAwesome();
+
+                // Bind events
+                bindEvents();
+            }
+
+            // Check if Font Awesome is loaded
+            function checkFontAwesome() {
+                const testIcon = document.createElement('i');
+                testIcon.className = 'fas fa-sync-alt';
+                document.body.appendChild(testIcon);
+                const isLoaded = window.getComputedStyle(testIcon, ':before').content !== '';
+                document.body.removeChild(testIcon);
+                if (!isLoaded) {
+                    showError('Font Awesome 圖標未成功加載，請檢查網絡連接或 CDN 可用性。');
+                }
+            }
+
+            // Disable buttons on library failure
+            function disableButtons() {
+                elements.convertBtn.disabled = true;
+                elements.downloadHtmlBtn.disabled = true;
+                elements.downloadWordBtn.disabled = true;
+                elements.downloadPptBtn.disabled = true;
+            }
+
+            // Event bindings
+            function bindEvents() {
+                elements.convertBtn.addEventListener('click', handleConversion);
+                elements.markdownInput.addEventListener('input', debounce(handleConversion, 400));
+                elements.htmlTab.addEventListener('click', () => switchTab('html'));
+                elements.wordTab.addEventListener('click', () => switchTab('word'));
+                elements.pptTab.addEventListener('click', () => switchTab('ppt'));
+                elements.downloadHtmlBtn.addEventListener('click', downloadHtml);
+                elements.downloadWordBtn.addEventListener('click', downloadWord);
+                elements.downloadPptBtn.addEventListener('click', downloadPpt);
+
+                elements.syntaxNavLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = link.getAttribute('href');
+                        const targetElement = document.querySelector(targetId);
+                        if (targetElement) {
+                            elements.syntaxNavLinks.forEach(l => l.classList.remove('active'));
+                            link.classList.add('active');
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                });
+
+                elements.copyButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const textareaId = btn.getAttribute('data-textarea-id');
+                        const textarea = document.querySelector(`textarea[data-textarea-id="${textareaId}"]`);
+                        if (textarea) {
+                            navigator.clipboard.writeText(textarea.value.trim())
+                                .then(() => {
+                                    btn.classList.add('copied');
+                                    btn.innerHTML = '<i class="fas fa-check mr-2"></i> 已複製';
+                                    setTimeout(() => {
+                                        btn.classList.remove('copied');
+                                        btn.innerHTML = '<i class="fas fa-copy mr-2"></i> 複製';
+                                    }, 2000);
+                                })
+                                .catch(err => showError(`複製失敗: ${err.message}`));
+                        } else {
+                            showError('無法找到文字框，請檢查頁面結構。');
+                        }
+                    });
+                });
+            }
+
+            // Debounce utility
+            function debounce(fn, delay) {
+                let timer;
+                return function(...args) {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
+
+            // Conversion handler
+            async function handleConversion() {
+                if (state.isConverting) return;
+                state.isConverting = true;
+                setButtonState(elements.convertBtn, true, '轉換中...');
+
+                try {
+                    const markdownText = elements.markdownInput.value.trim();
+                    if (!markdownText) {
+                        state.currentHtmlContent = '';
+                        state.cachedTokens = null;
+                        elements.htmlPreview.innerHTML = state.initialPlaceholder;
+                        showError('請輸入 Markdown 內容！');
+                    } else {
+                        state.currentHtmlContent = libraries.marked.parse(markdownText);
+                        state.cachedTokens = libraries.marked.lexer(markdownText);
+                        elements.htmlPreview.innerHTML = state.currentHtmlContent || state.initialPlaceholder;
+                    }
+                    switchTab('html');
+                } catch (error) {
+                    showError(`Markdown 解析錯誤: ${error.message}`);
+                    elements.htmlPreview.innerHTML = `<p class="text-red-600 p-4">解析錯誤: ${error.message}</p>`;
+                    state.currentHtmlContent = '';
+                    state.cachedTokens = null;
+                } finally {
+                    state.isConverting = false;
+                    setButtonState(elements.convertBtn, false, '轉換預覽');
+                }
+            }
+
+            // Tab switching
+            function switchTab(tabName) {
+                const tabs = { html: elements.htmlTab, word: elements.wordTab, ppt: elements.pptTab };
+                const panes = { html: elements.htmlPreviewPane, word: elements.wordPreviewPane, ppt: elements.pptPreviewPane };
+
+                Object.values(tabs).forEach(tab => tab.classList.replace('active', 'inactive'));
+                Object.values(panes).forEach(pane => pane.classList.remove('active'));
+
+                tabs[tabName].classList.replace('inactive', 'active');
+                panes[tabName].classList.add('active');
+            }
+
+            // Download HTML
+            function downloadHtml() {
+                if (!libraries.FileSaver) {
+                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
+                    return;
+                }
+                if (!state.currentHtmlContent || elements.htmlPreview.innerHTML === state.initialPlaceholder) {
+                    showError('請先輸入並轉換 Markdown！');
+                    return;
+                }
+
+                setButtonState(elements.downloadHtmlBtn, true, '下載中...');
+                try {
+                    const fullHtml = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Markdown Export</title><style>body{font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding:20px;max-width:800px;margin:20px auto;color:#333;}h1{font-size:2em;border-bottom:1px solid #eee;padding-bottom:0.3em;}h2{font-size:1.5em;border-bottom:1px solid #eee;padding-bottom:0.3em;}h3{font-size:1.25em;}p{margin-bottom:1em;}ul,ol{padding-left:2em;margin-bottom:1em;}blockquote{border-left:4px solid #dfe2e5;padding:0.5em 1em;margin:0 0 1em;color:#6a737d;}pre{background-color:#1e293b;padding:1em;border-radius:6px;overflow-x:auto;font-family:monospace;font-size:0.9em;margin-bottom:1em;color:#e2e8f0;}code{font-family:monospace;background-color:#f0f0f0;padding:0.2em 0.4em;border-radius:4px;font-size:85%;}table{border-collapse:collapse;width:100%;margin-bottom:1em;border:1px solid #dfe2e5;}th,td{border:1px solid #dfe2e5;padding:0.6em 1em;}th{background-color:#f6f8fa;font-weight:600;}img{max-width:100%;height:auto;}</style></head><body>${state.currentHtmlContent}</body></html>`;
+                    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+                    libraries.FileSaver(blob, 'markdown_export.html');
+                } catch (error) {
+                    showError(`HTML 下載錯誤: ${error.message}`);
+                } finally {
+                    setButtonState(elements.downloadHtmlBtn, false, '下載 HTML');
+                }
+            }
+
+            // Download Word
+            async function downloadWord() {
+                if (!libraries.HtmlToDocx) {
+                    showError('html-to-docx-ts 未載入，無法下載！請檢查網絡連接。');
+                    return;
+                }
+                if (!libraries.FileSaver) {
+                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
+                    return;
+                }
+                if (!state.currentHtmlContent || elements.htmlPreview.innerHTML === state.initialPlaceholder) {
+                    showError('請先輸入並轉換 Markdown！');
+                    return;
+                }
+
+                setButtonState(elements.downloadWordBtn, true, '轉換中...');
+                try {
+                    const styledHtml = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>Document</title><style>body{font-family:'Inter',Calibri,sans-serif;font-size:11pt;}h1{font-size:16pt;font-weight:bold;margin:12pt 0 3pt;}h2{font-size:14pt;font-weight:bold;margin:10pt 0 2pt;}h3{font-size:12pt;font-weight:bold;margin:8pt 0 2pt;}p{margin-bottom:6pt;line-height:1.15;}ul,ol{margin-left:36pt;margin-bottom:6pt;}blockquote{border-left:3pt solid #CCC;padding-left:10pt;margin-left:0;color:#555;font-style:italic;}pre{background-color:#1e293b;padding:5pt;font-family:'Courier New',monospace;font-size:9pt;margin-bottom:6pt;white-space:pre-wrap;color:#e2e8f0;}code{font-family:'Courier New',monospace;font-size:9pt;background-color:#f0f0f0;padding:1pt 3pt;}table{border-collapse:collapse;margin-bottom:8pt;border:1pt solid #CCC;}th,td{border:1pt solid #CCC;padding:4pt 6pt;}th{font-weight:bold;background-color:#f2f2f2;}img{max-width:100%;height:auto;}</style></head><body>${state.currentHtmlContent}</body></html>`;
+                    const docxBlob = await libraries.HtmlToDocx.asBlob(styledHtml, {
+                        orientation: 'portrait',
+                        margins: { top: 720, right: 720, bottom: 720, left: 720 }
+                    });
+                    libraries.FileSaver(docxBlob, 'markdown_export.docx');
+                } catch (error) {
+                    showError(`Word 轉換錯誤: ${error.message}`);
+                } finally {
+                    setButtonState(elements.downloadWordBtn, false, '下載 Word');
+                }
+            }
+
+            // Download PPT
+            async function downloadPpt() {
+                if (!libraries.PptxGenJS) {
+                    showError('PptxGenJS 未載入，無法下載！請檢查網絡連接。');
+                    return;
+                }
+                if (!libraries.FileSaver) {
+                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
+                    return;
+                }
+                if (!state.cachedTokens) {
+                    showError('請先輸入並轉換 Markdown！');
+                    return;
+                }
+
+                setButtonState(elements.downloadPptBtn, true, '生成中...');
+                try {
+                    const pptx = new libraries.PptxGenJS();
+                    pptx.layout = 'LAYOUT_16x9';
+
+                    let currentSlide = null;
+                    let slideContent = [];
+                    let contentY = 1.0;
+
+                    function finalizeSlide() {
+                        if (!currentSlide || !slideContent.length) return;
+
+                        slideContent.forEach(item => {
+                            if (contentY > 6.5) return;
+                            const options = { x: 0.5, y: contentY, w: '90%', ...item.options };
+                            try {
+                                if (item.type === 'text') {
+                                    currentSlide.addText(item.value, options);
+                                    const lines = Array.isArray(item.value) ? item.value.length : (item.value.match(/\n/g) || []).length + 1;
+                                    contentY += (lines * (options.fontSize || 16) * 0.02) + 0.1;
+                                } else if (item.type === 'table') {
+                                    currentSlide.addTable(item.rows, options);
+                                    contentY += (item.rows.length * 0.25) + 0.2;
+                                } else if (item.type === 'code') {
+                                    currentSlide.addText(item.value, { ...options, fontFace: 'Courier New', fontSize: 10, fill: { color: 'f3f4f6' }, margin: 5 });
+                                    contentY += 0.7;
+                                }
+                            } catch (error) {
+                                console.error(`Error adding ${item.type}:`, error);
+                                currentSlide.addText(`[Error: ${item.type}]`, { x: 0.5, y: contentY, color: 'FF0000', fontSize: 10 });
+                                contentY += 0.2;
+                            }
+                        });
+                        slideContent = [];
+                        contentY = 1.0;
+                    }
+
+                    state.cachedTokens.forEach(token => {
+                        if ((token.type === 'heading' && token.depth === 1) || token.type === 'hr') {
+                            finalizeSlide();
+                            currentSlide = pptx.addSlide();
+                            if (token.type === 'heading') {
+                                currentSlide.addText(token.text, { x: 0.5, y: 0.25, w: '90%', fontSize: 28, bold: true, color: '336699', align: 'center' });
+                            }
+                            contentY = 1.0;
+                        } else {
+                            if (!currentSlide) {
+                                currentSlide = pptx.addSlide();
+                                currentSlide.addText('簡報開始', { x: 0.5, y: 0.25, w: '90%', fontSize: 28, bold: true, color: '336699', align: 'center' });
+                                contentY = 1.0;
+                            }
+
+                            switch (token.type) {
+                                case 'heading':
+                                    slideContent.push({ type: 'text', value: token.text, options: { fontSize: (24 - token.depth * 2), bold: true, paraSpaceBefore: 8 } });
+                                    break;
+                                case 'paragraph':
+                                    slideContent.push({ type: 'text', value: parseInlineTokens(token.tokens) });
+                                    break;
+                                case 'list':
+                                    token.items.forEach(item => {
+                                        const text = parseInlineTokens(item.tokens?.filter(t => t.type === 'text' || t.type === 'paragraph').flatMap(t => t.tokens || [t]));
+                                        slideContent.push({ type: 'text', value: text, options: { bullet: { type: 'bullet' } } });
+                                    });
+                                    break;
+                                case 'table':
+                                    const rows = [
+                                        token.header.map(cell => ({ text: parseInlineTokens(cell.tokens).map(t => t.text).join(''), options: { bold: true, fill: 'f2f2f2' } })),
+                                        ...token.rows.map(row => row.map(cell => ({ text: parseInlineTokens(cell.tokens).map(t => t.text).join('') })))
+                                    ];
+                                    slideContent.push({ type: 'table', rows, options: { border: { type: 'solid', pt: 1, color: 'CCCCCC' } } });
+                                    break;
+                                case 'code':
+                                    slideContent.push({ type: 'code', value: token.text });
+                                    break;
+                                case 'blockquote':
+                                    slideContent.push({ type: 'text', value: parseInlineTokens(token.tokens), options: { italic: true, color: '595959' } });
+                                    break;
+                            }
+                        }
+                    });
+
+                    finalizeSlide();
+                    await pptx.writeFile({ fileName: 'markdown_export.pptx' });
+                } catch (error) {
+                    showError(`PPT 生成錯誤: ${error.message}`);
+                } finally {
+                    setButtonState(elements.downloadPptBtn, false, '下載 PPT');
+                }
+            }
+
+            // Parse inline tokens for PPT
+            function parseInlineTokens(tokens) {
+                if (!tokens) return [{ text: '' }];
+                const result = [];
+                tokens.forEach(token => {
+                    switch (token.type) {
+                        case 'text': result.push({ text: token.text }); break;
+                        case 'strong': result.push({ text: token.text, options: { bold: true } }); break;
+                        case 'em': result.push({ text: token.text, options: { italic: true } }); break;
+                        case 'codespan': result.push({ text: token.text, options: { fontFace: 'Courier New', fontSize: 10 } }); break;
+                        case 'link': result.push({ text: token.text, options: { color: '0000FF', underline: true } }); break;
+                        case 'image': result.push({ text: `[Image: ${token.text}]`, options: { color: '555555', fontSize: 10 } }); break;
+                        default: if (token.text) result.push({ text: token.text });
+                    }
+                });
+                return result.length ? result : [{ text: '' }];
+            }
+
+            // Button state management
+            function setButtonState(button, isLoading, text) {
+                button.disabled = isLoading;
+                let iconClass;
+                switch (button.id) {
+                    case 'convert-btn': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'; break;
+                    case 'download-html': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-code'; break;
+                    case 'download-word': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-word'; break;
+                    case 'download-ppt': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-powerpoint'; break;
+                    default: iconClass = 'fa-sync-alt';
+                }
+                button.innerHTML = `<i class="fas ${iconClass} mr-2"></i>${text}`;
+            }
+
+            // Error handling
+            function showError(message) {
+                alert(message);
+                console.error(message);
+            }
+
+            // Start application
+            document.addEventListener('DOMContentLoaded', init);
+        })();
+    </script>
+</body>
+</html>
