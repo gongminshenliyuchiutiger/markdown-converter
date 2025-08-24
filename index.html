@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -229,6 +190,42 @@
             #syntax-guide-nav ul { display: flex; flex-wrap: wrap; gap: 0.5rem; }
             #syntax-guide-nav li a { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
         }
+
+        /* --- NEW: Mascot Styles --- */
+        #mascot {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 999;
+        }
+        #mascot:hover {
+            transform: scale(1.15) rotate(-8deg);
+            animation: mascot-shake 0.5s infinite alternate;
+        }
+        .particle {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1001; /* Above other elements */
+            transition: transform 1s ease-out, opacity 1s ease-out;
+        }
+        @keyframes mascot-shake {
+            0% { transform: scale(1.15) rotate(-8deg); }
+            100% { transform: scale(1.15) rotate(8deg); }
+        }
+        @media (max-width: 768px) {
+            #mascot {
+                width: 80px;
+                bottom: 15px;
+                left: 15px;
+            }
+        }
     </style>
 </head>
 <body class="bg-white min-h-screen text-gray-900">
@@ -321,7 +318,6 @@
             </section>
         </div>
 
-        <!-- Markdown Syntax Guide -->
         <section class="mt-10 bg-gray-100 rounded-xl shadow-md p-6">
             <h2 class="text-2xl font-semibold text-gray-800 mb-5 text-center">Markdown 語法說明</h2>
             <div id="syntax-guide-container">
@@ -462,742 +458,509 @@ ___</textarea>
 function greet(name) {
   console.log(`Hello, ${name}!`);
 }
-```
 
-    縮排程式碼
-    行二</textarea>
-                        <button class="copy-btn" data-textarea-id="md-code"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-images">
-                        <h4>圖片 (Images)</h4>
-                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-images">![替代文字](https://via.placeholder.com/150 "標題")
-![Logo][logo]
-
-[logo]: https://via.placeholder.com/50</textarea>
-                        <button class="copy-btn" data-textarea-id="md-images"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-image-links">
-                        <h4>圖片連結 (Linked Images)</h4>
-                        <textarea class="syntax-textarea" rows="1" data-textarea-id="md-image-links">[![替代文字](https://via.placeholder.com/80)](https://example.com)</textarea>
-                        <button class="copy-btn" data-textarea-id="md-image-links"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-tables">
-                        <h4>表格 (Tables)</h4>
-                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-tables">| 標題 1 | 標題 2 | 置中 | 靠右 |
-| :------ | :------ | :----: | ------: |
-| 內容 1  | 長內容  | 中間  | 右對齊 |
-| `程式碼`| *斜體* | **粗體** | 文字 |</textarea>
-                        <button class="copy-btn" data-textarea-id="md-tables"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-task-lists">
-                        <h4>核取方塊 (Task Lists)</h4>
-                        <textarea class="syntax-textarea" rows="3" data-textarea-id="md-task-lists">- [x] 已完成
-- [ ] 未完成
-  - [ ] 子任務</textarea>
-                        <button class="copy-btn" data-textarea-id="md-task-lists"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-escaping">
-                        <h4>跳脫字元 (Escaping)</h4>
-                        <textarea class="syntax-textarea" rows="4" data-textarea-id="md-escaping">\*星星\*
-\`code\`
-\# 非標題
-\\ 反斜線</textarea>
-                        <button class="copy-btn" data-textarea-id="md-escaping"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
-                    <div class="syntax-section" id="md-html">
-                        <h4>內嵌 HTML (Inline HTML)</h4>
-                        <textarea class="syntax-textarea" rows="3" data-textarea-id="md-html"><div style="color: blue;">
-  藍色文字
-</div></textarea>
-                        <button class="copy-btn" data-textarea-id="md-html"><i class="fas fa-copy mr-2"></i> 複製</button>
-                    </div>
+縮排程式碼
+行二</textarea>
+                    <button class="copy-btn" data-textarea-id="md-code"><i class="fas fa-copy mr-2"></i> 複製</button>
                 </div>
-            </div>
-        </section>
+                <div class="syntax-section" id="md-images">
+                    <h4>圖片 (Images)</h4>
+                    <textarea class="syntax-textarea" rows="4" data-textarea-id="md-images">![替代文字](https://via.placeholder.com/150 "標題")
+![logo](https://via.placeholder.com/50</textarea>)
+<button class="copy-btn" data-textarea-id="md-images"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+<div class="syntax-section" id="md-image-links">
+<h4>圖片連結 (Linked Images)</h4>
+<textarea class="syntax-textarea" rows="1" data-textarea-id="md-image-links">
+![alt text](https://via.placeholder.com/80)
+</textarea>
+<button class="copy-btn" data-textarea-id="md-image-links"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+<div class="syntax-section" id="md-tables">
+<h4>表格 (Tables)</h4>
+<textarea class="syntax-textarea" rows="4" data-textarea-id="md-tables">| 標題 1 | 標題 2 | 置中 | 靠右 |
+| :------ | :------ | :----: | ------: |
+| 內容 1 | 長內容 | 中間 | 右對齊 |
+| 程式碼| 斜體 | 粗體 | 文字 |</textarea>
+<button class="copy-btn" data-textarea-id="md-tables"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+<div class="syntax-section" id="md-task-lists">
+<h4>核取方塊 (Task Lists)</h4>
+<textarea class="syntax-textarea" rows="3" data-textarea-id="md-task-lists">- [x] 已完成
+未完成
+子任務</textarea>
+<button class="copy-btn" data-textarea-id="md-task-lists"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+<div class="syntax-section" id="md-escaping">
+<h4>跳脫字元 (Escaping)</h4>
+<textarea class="syntax-textarea" rows="4" data-textarea-id="md-escaping">*星星*
+`code`
+# 非標題
+\ 反斜線</textarea>
+<button class="copy-btn" data-textarea-id="md-escaping"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+<div class="syntax-section" id="md-html">
+<h4>內嵌 HTML (Inline HTML)</h4>
+<textarea class="syntax-textarea" rows="3" data-textarea-id="md-html"><div style="color: blue;">
+藍色文字
+</div></textarea>
+<button class="copy-btn" data-textarea-id="md-html"><i class="fas fa-copy mr-2"></i> 複製</button>
+</div>
+</div>
+</div>
+</section>
+    <footer class="text-center mt-10 text-gray-600 text-sm">
+        Copyright © Liyuchiutiger Gongminshen
+    </footer>
+</div>
 
-        <footer class="text-center mt-10 text-gray-600 text-sm">
-            Copyright © Liyuchiutiger Gongminshen
-        </footer>
-    </div>
+<!-- NEW: Mascot Element -->
+<img id="mascot" src="image/LiyuChillGuy.svg" alt="LiyuChillGuy Mascot">
 
-    <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-            return cell !== '' && cell != null;
+<script type="text/javascript">
+    // This script block seems to be related to a different functionality (XLSX parsing) and is not used by the main script.
+    // It's kept here as it was in the original file, but it does not affect the Markdown converter.
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                    headerRowIndex = 0;
+                }
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
         }
-        function loadFileData(filename) {
-            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-                try {
-                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                    var firstSheetName = workbook.SheetNames[0];
-                    var worksheet = workbook.Sheets[firstSheetName];
+        return gk_fileData[filename] || "";
+    }
+</script>
 
-                    // Convert sheet to JSON to filter blank rows
-                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                    // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                    var filteredData = jsonData.filter(row => row.some(filledCell));
+<script>
+    (function() {
+        'use strict';
 
-                    // Heuristic to find the header row
-                    var headerRowIndex = filteredData.findIndex((row, index) =>
-                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                    );
-                    if (headerRowIndex === -1 || headerRowIndex > 25) {
-                        headerRowIndex = 0;
+        const state = {
+            currentHtmlContent: '',
+            cachedTokens: null,
+            isConverting: false,
+            initialPlaceholder: '<p class="text-gray-500 italic p-4 text-center">點擊「轉換預覽」按鈕來查看結果</p>'
+        };
+
+        const elements = {
+            markdownInput: document.getElementById('markdown-input'),
+            convertBtn: document.getElementById('convert-btn'),
+            htmlPreview: document.getElementById('html-preview'),
+            downloadHtmlBtn: document.getElementById('download-html'),
+            downloadWordBtn: document.getElementById('download-word'),
+            downloadPptBtn: document.getElementById('download-ppt'),
+            htmlTab: document.getElementById('html-tab'),
+            wordTab: document.getElementById('word-tab'),
+            pptTab: document.getElementById('ppt-tab'),
+            htmlPreviewPane: document.getElementById('html-preview-pane'),
+            wordPreviewPane: document.getElementById('word-preview-pane'),
+            pptPreviewPane: document.getElementById('ppt-preview-pane'),
+            syntaxNavLinks: document.querySelectorAll('#syntax-guide-nav a'),
+            copyButtons: document.querySelectorAll('.copy-btn'),
+            mascot: document.getElementById('mascot') // NEW: Mascot element
+        };
+
+        const libraries = {
+            marked: typeof marked !== 'undefined' ? marked : null,
+            FileSaver: typeof saveAs !== 'undefined' ? saveAs : null,
+            PptxGenJS: typeof PptxGenJS !== 'undefined' ? PptxGenJS : null,
+            Docx: typeof docx !== 'undefined' ? docx : null
+        };
+
+        function init() {
+            console.log('Marked:', !!libraries.marked);
+            console.log('FileSaver:', !!libraries.FileSaver);
+            console.log('PptxGenJS:', !!libraries.PptxGenJS);
+            console.log('Docx:', !!libraries.Docx);
+
+            if (!libraries.marked) {
+                showError('Marked.js 未載入，無法解析 Markdown。');
+                disableButtons();
+                return;
+            }
+            if (!libraries.FileSaver) { showError('FileSaver.js 未載入，無法下載文件。'); elements.downloadHtmlBtn.disabled = true; elements.downloadWordBtn.disabled = true; elements.downloadPptBtn.disabled = true; }
+            if (!libraries.Docx) { showError('docx.js 未載入，Word 轉換將不可用。'); elements.downloadWordBtn.disabled = true; }
+            if (!libraries.PptxGenJS) { showError('PptxGenJS 未載入，PPT 轉換將不可用。'); elements.downloadPptBtn.disabled = true; }
+
+            libraries.marked.setOptions({ breaks: true, gfm: true, pedantic: false, sanitize: false });
+            elements.htmlPreview.innerHTML = state.initialPlaceholder;
+            checkFontAwesome();
+            bindEvents();
+        }
+
+        function checkFontAwesome() {
+            const testIcon = document.createElement('i');
+            testIcon.className = 'fas fa-sync-alt';
+            document.body.appendChild(testIcon);
+            const isLoaded = window.getComputedStyle(testIcon, ':before').content !== '';
+            document.body.removeChild(testIcon);
+            if (!isLoaded) { showError('Font Awesome 圖標未成功加載。'); }
+        }
+
+        function disableButtons() {
+            elements.convertBtn.disabled = true;
+            elements.downloadHtmlBtn.disabled = true;
+            elements.downloadWordBtn.disabled = true;
+            elements.downloadPptBtn.disabled = true;
+        }
+
+        function bindEvents() {
+            elements.convertBtn.addEventListener('click', handleConversion);
+            elements.markdownInput.addEventListener('input', debounce(handleConversion, 400));
+            elements.htmlTab.addEventListener('click', () => switchTab('html'));
+            elements.wordTab.addEventListener('click', () => switchTab('word'));
+            elements.pptTab.addEventListener('click', () => switchTab('ppt'));
+            elements.downloadHtmlBtn.addEventListener('click', downloadHtml);
+            elements.downloadWordBtn.addEventListener('click', downloadWord);
+            elements.downloadPptBtn.addEventListener('click', downloadPpt);
+
+            elements.syntaxNavLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        elements.syntaxNavLinks.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-
-                    // Convert filtered JSON back to CSV
-                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
-                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                    return csv;
-                } catch (e) {
-                    console.error(e);
-                    return "";
-                }
-            }
-            return gk_fileData[filename] || "";
-        }
-    </script>
-
-    <script>
-        (function() {
-            'use strict';
-
-            // State management
-            const state = {
-                currentHtmlContent: '',
-                cachedTokens: null,
-                isConverting: false,
-                initialPlaceholder: '<p class="text-gray-500 italic p-4 text-center">點擊「轉換預覽」按鈕來查看結果</p>'
-            };
-
-            // DOM elements
-            const elements = {
-                markdownInput: document.getElementById('markdown-input'),
-                convertBtn: document.getElementById('convert-btn'),
-                htmlPreview: document.getElementById('html-preview'),
-                downloadHtmlBtn: document.getElementById('download-html'),
-                downloadWordBtn: document.getElementById('download-word'),
-                downloadPptBtn: document.getElementById('download-ppt'),
-                htmlTab: document.getElementById('html-tab'),
-                wordTab: document.getElementById('word-tab'),
-                pptTab: document.getElementById('ppt-tab'),
-                htmlPreviewPane: document.getElementById('html-preview-pane'),
-                wordPreviewPane: document.getElementById('word-preview-pane'),
-                pptPreviewPane: document.getElementById('ppt-preview-pane'),
-                syntaxNavLinks: document.querySelectorAll('#syntax-guide-nav a'),
-                copyButtons: document.querySelectorAll('.copy-btn')
-            };
-
-            // Library availability
-            const libraries = {
-                marked: typeof marked !== 'undefined' ? marked : null,
-                FileSaver: typeof saveAs !== 'undefined' ? saveAs : null,
-                PptxGenJS: typeof PptxGenJS !== 'undefined' ? PptxGenJS : null,
-                Docx: typeof docx !== 'undefined' ? docx : null
-            };
-
-            // Initialize
-            function init() {
-                // Log library loading status
-                console.log('Marked:', !!libraries.marked);
-                console.log('FileSaver:', !!libraries.FileSaver);
-                console.log('PptxGenJS:', !!libraries.PptxGenJS);
-                console.log('Docx:', !!libraries.Docx);
-
-                if (!libraries.marked) {
-                    showError('Marked.js 未載入，無法解析 Markdown。請檢查網絡連接。');
-                    disableButtons();
-                    return;
-                }
-                if (!libraries.FileSaver) {
-                    showError('FileSaver.js 未載入，無法下載文件。');
-                    elements.downloadHtmlBtn.disabled = true;
-                    elements.downloadWordBtn.disabled = true;
-                    elements.downloadPptBtn.disabled = true;
-                }
-                if (!libraries.Docx) {
-                    showError('docx.js 未載入，Word 轉換將不可用。');
-                    elements.downloadWordBtn.disabled = true;
-                }
-                if (!libraries.PptxGenJS) {
-                    showError('PptxGenJS 未載入，PPT 轉換將不可用。');
-                    elements.downloadPptBtn.disabled = true;
-                }
-
-                // Configure Marked.js
-                libraries.marked.setOptions({
-                    breaks: true,
-                    gfm: true,
-                    pedantic: false,
-                    sanitize: true
                 });
+            });
 
-                // Set initial state
-                elements.htmlPreview.innerHTML = state.initialPlaceholder;
-
-                // Check Font Awesome loading
-                checkFontAwesome();
-
-                // Bind events
-                bindEvents();
-            }
-
-            // Check if Font Awesome is loaded
-            function checkFontAwesome() {
-                const testIcon = document.createElement('i');
-                testIcon.className = 'fas fa-sync-alt';
-                document.body.appendChild(testIcon);
-                const isLoaded = window.getComputedStyle(testIcon, ':before').content !== '';
-                document.body.removeChild(testIcon);
-                if (!isLoaded) {
-                    showError('Font Awesome 圖標未成功加載，請檢查網絡連接或 CDN 可用性。');
-                }
-            }
-
-            // Disable buttons on library failure
-            function disableButtons() {
-                elements.convertBtn.disabled = true;
-                elements.downloadHtmlBtn.disabled = true;
-                elements.downloadWordBtn.disabled = true;
-                elements.downloadPptBtn.disabled = true;
-            }
-
-            // Event bindings
-            function bindEvents() {
-                elements.convertBtn.addEventListener('click', handleConversion);
-                elements.markdownInput.addEventListener('input', debounce(handleConversion, 400));
-                elements.htmlTab.addEventListener('click', () => switchTab('html'));
-                elements.wordTab.addEventListener('click', () => switchTab('word'));
-                elements.pptTab.addEventListener('click', () => switchTab('ppt'));
-                elements.downloadHtmlBtn.addEventListener('click', downloadHtml);
-                elements.downloadWordBtn.addEventListener('click', downloadWord);
-                elements.downloadPptBtn.addEventListener('click', downloadPpt);
-
-                elements.syntaxNavLinks.forEach(link => {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const targetId = link.getAttribute('href');
-                        const targetElement = document.querySelector(targetId);
-                        if (targetElement) {
-                            elements.syntaxNavLinks.forEach(l => l.classList.remove('active'));
-                            link.classList.add('active');
-                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                    });
-                });
-
-                elements.copyButtons.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const textareaId = btn.getAttribute('data-textarea-id');
-                        const textarea = document.querySelector(`textarea[data-textarea-id="${textareaId}"]`);
-                        if (textarea) {
-                            navigator.clipboard.writeText(textarea.value.trim())
-                                .then(() => {
-                                    btn.classList.add('copied');
-                                    btn.innerHTML = '<i class="fas fa-check mr-2"></i> 已複製';
-                                    setTimeout(() => {
-                                        btn.classList.remove('copied');
-                                        btn.innerHTML = '<i class="fas fa-copy mr-2"></i> 複製';
-                                    }, 2000);
-                                })
-                                .catch(err => showError(`複製失敗: ${err.message}`));
-                        } else {
-                            showError('無法找到文字框，請檢查頁面結構。');
-                        }
-                    });
-                });
-            }
-
-            // Debounce utility
-            function debounce(fn, delay) {
-                let timer;
-                return function(...args) {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => fn.apply(this, args), delay);
-                };
-            }
-
-            // Conversion handler
-            async function handleConversion() {
-                if (state.isConverting) return;
-                state.isConverting = true;
-                setButtonState(elements.convertBtn, true, '轉換/Ag中...');
-
-                try {
-                    const markdownText = elements.markdownInput.value.trim();
-                    if (!markdownText) {
-                        state.currentHtmlContent = '';
-                        state.cachedTokens = null;
-                        elements.htmlPreview.innerHTML = state.initialPlaceholder;
-                        showError('請輸入 Markdown 內容！');
+            elements.copyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const textareaId = btn.getAttribute('data-textarea-id');
+                    const textarea = document.querySelector(`textarea[data-textarea-id="${textareaId}"]`);
+                    if (textarea) {
+                        navigator.clipboard.writeText(textarea.value.trim())
+                            .then(() => {
+                                btn.classList.add('copied');
+                                btn.innerHTML = '<i class="fas fa-check mr-2"></i> 已複製';
+                                setTimeout(() => {
+                                    btn.classList.remove('copied');
+                                    btn.innerHTML = '<i class="fas fa-copy mr-2"></i> 複製';
+                                }, 2000);
+                            })
+                            .catch(err => showError(`複製失敗: ${err.message}`));
                     } else {
-                        state.currentHtmlContent = libraries.marked.parse(markdownText);
-                        state.cachedTokens = libraries.marked.lexer(markdownText);
-                        elements.htmlPreview.innerHTML = state.currentHtmlContent || state.initialPlaceholder;
+                        showError('無法找到文字框。');
                     }
-                    switchTab('html');
-                } catch (error) {
-                    showError(`Markdown 解析錯誤: ${error.message}`);
-                    elements.htmlPreview.innerHTML = `<p class="text-red-600 p-4">解析錯誤: ${error.message}</p>`;
+                });
+            });
+            
+            // NEW: Mascot event listener
+            elements.mascot.addEventListener('click', (e) => {
+                for (let i = 0; i < 30; i++) {
+                    createParticle(e.clientX, e.clientY);
+                }
+            });
+        }
+
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        async function handleConversion() {
+            if (state.isConverting) return;
+            state.isConverting = true;
+            setButtonState(elements.convertBtn, true, '轉換中...');
+            try {
+                const markdownText = elements.markdownInput.value; // Keep whitespace for parsing
+                if (!markdownText.trim()) {
                     state.currentHtmlContent = '';
                     state.cachedTokens = null;
-                } finally {
-                    state.isConverting = false;
-                    setButtonState(elements.convertBtn, false, '轉換預覽');
+                    elements.htmlPreview.innerHTML = state.initialPlaceholder;
+                } else {
+                    state.currentHtmlContent = libraries.marked.parse(markdownText);
+                    state.cachedTokens = libraries.marked.lexer(markdownText);
+                    elements.htmlPreview.innerHTML = state.currentHtmlContent || state.initialPlaceholder;
                 }
+            } catch (error) {
+                showError(`Markdown 解析錯誤: ${error.message}`);
+                elements.htmlPreview.innerHTML = `<p class="text-red-600 p-4">解析錯誤: ${error.message}</p>`;
+                state.currentHtmlContent = '';
+                state.cachedTokens = null;
+            } finally {
+                state.isConverting = false;
+                setButtonState(elements.convertBtn, false, '轉換預覽');
             }
+        }
 
-            // Tab switching
-            function switchTab(tabName) {
-                const tabs = { html: elements.htmlTab, word: elements.wordTab, ppt: elements.pptTab };
-                const panes = { html: elements.htmlPreviewPane, word: elements.wordPreviewPane, ppt: elements.pptPreviewPane };
+        function switchTab(tabName) {
+            const tabs = { html: elements.htmlTab, word: elements.wordTab, ppt: elements.pptTab };
+            const panes = { html: elements.htmlPreviewPane, word: elements.wordPreviewPane, ppt: elements.pptPreviewPane };
+            Object.values(tabs).forEach(tab => tab.classList.replace('active', 'inactive'));
+            Object.values(panes).forEach(pane => pane.classList.remove('active'));
+            tabs[tabName].classList.replace('inactive', 'active');
+            panes[tabName].classList.add('active');
+        }
 
-                Object.values(tabs).forEach(tab => tab.classList.replace('active', 'inactive'));
-                Object.values(panes).forEach(pane => pane.classList.remove('active'));
+        function downloadHtml() {
+            if (!libraries.FileSaver) { showError('FileSaver.js 未載入！'); return; }
+            if (!state.currentHtmlContent || elements.htmlPreview.innerHTML === state.initialPlaceholder) { showError('請先轉換 Markdown！'); return; }
+            setButtonState(elements.downloadHtmlBtn, true, '下載中...');
+            try {
+                const fullHtml = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>Markdown Export</title><style>body{font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding:2rem;max-width:800px;margin:2rem auto;color:#1f2937;}h1,h2,h3{color:#111827;}h1{font-size:2em;border-bottom:2px solid #e5e7eb;}h2{font-size:1.5em;border-bottom:1px solid #e5e7eb;}blockquote{border-left:4px solid #d1d5db;padding-left:1em;color:#4b5568;font-style:italic;}pre{background-color:#1f2937;color:#f9fafb;padding:1em;border-radius:0.5rem;overflow-x:auto;}code{font-family:monospace;background-color:#f3f4f6;padding:0.2em 0.4em;border-radius:4px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #d1d5db;padding:0.5em 1em;}th{background-color:#f9fafb;}img{max-width:100%;height:auto;border-radius:0.5rem;}</style></head><body>${state.currentHtmlContent}</body></html>`;
+                const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+                libraries.FileSaver(blob, 'markdown_export.html');
+            } catch (error) { showError(`HTML 下載錯誤: ${error.message}`); }
+            finally { setButtonState(elements.downloadHtmlBtn, false, '下載 HTML'); }
+        }
 
-                tabs[tabName].classList.replace('inactive', 'active');
-                panes[tabName].classList.add('active');
-            }
+        // --- OPTIMIZED WORD EXPORT ---
+        async function downloadWord() {
+            if (!libraries.Docx || !libraries.FileSaver) { showError('所需函式庫未載入，無法下載 Word！'); return; }
+            if (!state.cachedTokens) { showError('請先輸入並轉換 Markdown！'); return; }
 
-            // Download HTML
-            function downloadHtml() {
-                if (!libraries.FileSaver) {
-                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
-                    return;
-                }
-                if (!state.currentHtmlContent || elements.htmlPreview.innerHTML === state.initialPlaceholder) {
-                    showError('請先輸入並轉換 Markdown！');
-                    return;
-                }
+            setButtonState(elements.downloadWordBtn, true, '轉換中...');
+            try {
+                const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType, AlignmentType, Indent } = libraries.Docx;
+                const children = [];
 
-                setButtonState(elements.downloadHtmlBtn, true, '下載中...');
-                try {
-                    const fullHtml = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Markdown Export</title><style>body{font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding:20px;max-width:800px;margin:20px auto;color:#333;}h1{font-size:2em;border-bottom:1px solid #eee;padding-bottom:0.3em;}h2{font-size:1.5em;border-bottom:1px solid #eee;padding-bottom:0.3em;}h3{font-size:1.25em;}p{margin-bottom:1em;}ul,ol{padding-left:2em;margin-bottom:1em;}blockquote{border-left:4px solid #dfe2e5;padding:0.5em 1em;margin:0 0 1em;color:#6a737d;}pre{background-color:#1e293b;padding:1em;border-radius:6px;overflow-x:auto;font-family:monospace;font-size:0.9em;margin-bottom:1em;color:#e2e8f0;}code{font-family:monospace;background-color:#f0f0f0;padding:0.2em 0.4em;border-radius:4px;font-size:85%;}table{border-collapse:collapse;width:100%;margin-bottom:1em;border:1px solid #dfe2e5;}th,td{border:1px solid #dfe2e5;padding:0.6em 1em;}th{background-color:#f6f8fa;font-weight:600;}img{max-width:100%;height:auto;}</style></head><body>${state.currentHtmlContent}</body></html>`;
-                    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
-                    libraries.FileSaver(blob, 'markdown_export.html');
-                } catch (error) {
-                    showError(`HTML 下載錯誤: ${error.message}`);
-                } finally {
-                    setButtonState(elements.downloadHtmlBtn, false, '下載 HTML');
-                }
-            }
+                const FONT = "Calibri";
+                const THEME_COLOR = "4B6CB7";
 
-            // Download Word
-            async function downloadWord() {
-                if (!libraries.Docx) {
-                    showError('docx.js 未載入，無法下載！請檢查網絡連接。');
-                    return;
-                }
-                if (!libraries.FileSaver) {
-                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
-                    return;
-                }
-                if (!state.cachedTokens || elements.htmlPreview.innerHTML === state.initialPlaceholder) {
-                    showError('請先輸入並轉換 Markdown！');
-                    return;
-                }
-
-                setButtonState(elements.downloadWordBtn, true, '轉換中...');
-                try {
-                    const { Document, Paragraph, Packer, HeadingLevel, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ShadingType } = libraries.Docx;
-                    const doc = new Document({
-                        sections: [{
-                            properties: {
-                                page: {
-                                    margin: { top: 720, right: 720, bottom: 720, left: 720 }
-                                }
-                            },
-                            children: []
-                        }]
-                    });
-
-                    state.cachedTokens.forEach(token => {
-                        try {
-                            switch (token.type) {
-                                case 'heading':
-                                    doc.addSection({
-                                        children: [new Paragraph({
-                                            text: token.text,
-                                            heading: token.depth === 1 ? HeadingLevel.HEADING_1 :
-                                                    token.depth === 2 ? HeadingLevel.HEADING_2 :
-                                                    HeadingLevel[`HEADING_${token.depth}`] || HeadingLevel.HEADING_3,
-                                            spacing: { before: 360, after: 240 },
-                                            alignment: token.depth === 1 ? AlignmentType.CENTER : AlignmentType.LEFT,
-                                            children: [new TextRun({
-                                                text: token.text,
-                                                font: 'Arial',
-                                                size: 48 - token.depth * 4, // 24pt for H1, 20pt for H2, etc.
-                                                bold: true
-                                            })]
-                                        })]
-                                    });
-                                    break;
-                                case 'paragraph':
-                                    doc.addSection({
-                                        children: [new Paragraph({
-                                            children: [new TextRun({
-                                                text: token.text,
-                                                font: 'Arial',
-                                                size: 24 // 12pt
-                                            })],
-                                            spacing: { before: 120, after: 120 },
-                                            alignment: AlignmentType.JUSTIFIED
-                                        })]
-                                    });
-                                    break;
-                                case 'list':
-                                    token.items.forEach((item, index) => {
-                                        doc.addSection({
-                                            children: [new Paragraph({
-                                                children: [new TextRun({
-                                                    text: item.text,
-                                                    font: 'Arial',
-                                                    size: 24 // 12pt
-                                                })],
-                                                bullet: token.ordered ? { level: 0, style: 'decimal' } : { level: 0 },
-                                                indent: { left: 720, hanging: 360 },
-                                                spacing: { after: 120 }
-                                            })]
-                                        });
-                                    });
-                                    break;
-                                case 'code':
-                                    doc.addSection({
-                                        children: [new Paragraph({
-                                            children: [new TextRun({
-                                                text: token.text,
-                                                font: 'Courier New',
-                                                size: 20, // 10pt
-                                                color: '000000',
-                                                shading: { type: ShadingType.SOLID, color: 'F5F5F5' }
-                                            })],
-                                            spacing: { before: 240, after: 240 },
-                                            indent: { left: 360, right: 360 }
-                                        })]
-                                    });
-                                    break;
-                                case 'table':
-                                    const table = new Table({
-                                        rows: [
-                                            new TableRow({
-                                                children: token.header.map(cell => new TableCell({
-                                                    children: [new Paragraph({
-                                                        children: [new TextRun({
-                                                            text: cell.text,
-                                                            font: 'Arial',
-                                                            size: 24, // 12pt
-                                                            bold: true
-                                                        })],
-                                                        alignment: AlignmentType.CENTER
-                                                    })],
-                                                    shading: { type: ShadingType.SOLID, color: 'F0F0F0' },
-                                                    borders: {
-                                                        top: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        bottom: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        left: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        right: { style: BorderStyle.SINGLE, size: 4, color: '000000' }
-                                                    },
-                                                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
-                                                }))
-                                            }),
-                                            ...token.rows.map(row => new TableRow({
-                                                children: row.map(cell => new TableCell({
-                                                    children: [new Paragraph({
-                                                        children: [new TextRun({
-                                                            text: cell.text,
-                                                            font: 'Arial',
-                                                            size: 24 // 12pt
-                                                        })],
-                                                        alignment: AlignmentType.LEFT
-                                                    })],
-                                                    borders: {
-                                                        top: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        bottom: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        left: { style: BorderStyle.SINGLE, size: 4, color: '000000' },
-                                                        right: { style: BorderStyle.SINGLE, size: 4, color: '000000' }
-                                                    },
-                                                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
-                                                }))
+                state.cachedTokens.forEach(token => {
+                    try {
+                        switch (token.type) {
+                            case 'heading':
+                                children.push(new Paragraph({
+                                    heading: `Heading${token.depth}`,
+                                    children: [new TextRun({ text: token.text, font: FONT, size: 44 - token.depth * 4, bold: true })],
+                                    spacing: { after: 120 },
+                                }));
+                                break;
+                            case 'paragraph':
+                                children.push(new Paragraph({
+                                    children: [new TextRun({ text: token.text, font: FONT, size: 22 })],
+                                    spacing: { after: 120 },
+                                    alignment: AlignmentType.LEFT
+                                }));
+                                break;
+                            case 'list':
+                                token.items.forEach(item => {
+                                    children.push(new Paragraph({
+                                        children: [new TextRun({ text: item.text, font: FONT, size: 22 })],
+                                        bullet: { level: 0 },
+                                        indent: { left: 720, hanging: 360 },
+                                        spacing: { after: 60 }
+                                    }));
+                                });
+                                break;
+                            case 'code':
+                                children.push(new Paragraph({
+                                    children: [new TextRun({ text: token.text, font: "Courier New", size: 20 })],
+                                    shading: { type: ShadingType.SOLID, color: "F3F4F6" },
+                                    border: { top: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" }, bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" }, left: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" }, right: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
+                                    spacing: { before: 200, after: 200 },
+                                    indent: { left: 200, right: 200 }
+                                }));
+                                break;
+                            case 'table':
+                                children.push(new Table({
+                                    width: { size: 100, type: WidthType.PERCENTAGE },
+                                    rows: [
+                                        new TableRow({
+                                            children: token.header.map(cell => new TableCell({
+                                                children: [new Paragraph({ children: [new TextRun({ text: cell.text, bold: true, color: "FFFFFF", font: FONT, size: 22 })], alignment: AlignmentType.CENTER })],
+                                                shading: { type: ShadingType.SOLID, color: THEME_COLOR },
+                                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.SINGLE, size: 6, color: THEME_COLOR }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
                                             }))
-                                        ],
-                                        width: { size: 100, type: WidthType.PERCENTAGE },
-                                        margins: { top: 200, bottom: 200 }
-                                    });
-                                    doc.addSection({
-                                        children: [table]
-                                    });
-                                    break;
-                                case 'blockquote':
-                                    doc.addSection({
-                                        children: [new Paragraph({
-                                            children: [new TextRun({
-                                                text: token.text,
-                                                font: 'Arial',
-                                                size: 24, // 12pt
-                                                italics: true,
-                                                color: '595959'
-                                            })],
-                                            spacing: { before: 240, after: 240 },
-                                            indent: { left: 720 },
-                                            border: {
-                                                left: { style: BorderStyle.SINGLE, size: 12, color: '4B6CB7' }
-                                            }
-                                        })]
-                                    });
-                                    break;
-                            }
-                        } catch (error) {
-                            console.error(`Error processing token ${token.type}:`, error);
-                            doc.addSection({
-                                children: [new Paragraph({
-                                    children: [new TextRun({
-                                        text: `[Error: ${token.type}]`,
-                                        font: 'Arial',
-                                        size: 24,
-                                        color: 'FF0000'
-                                    })],
-                                    spacing: { after: 120 }
-                                })]
-                            });
+                                        }),
+                                        ...token.rows.map((row, rowIndex) => new TableRow({
+                                            children: row.map(cell => new TableCell({
+                                                children: [new Paragraph({ children: [new TextRun({ text: cell.text, font: FONT, size: 22 })] })],
+                                                shading: { type: ShadingType.SOLID, color: rowIndex % 2 === 0 ? "FFFFFF" : "F9FAFB" },
+                                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+                                            }))
+                                        }))
+                                    ]
+                                }));
+                                children.push(new Paragraph({ text: '' })); // Add space after table
+                                break;
+                            case 'blockquote':
+                                children.push(new Paragraph({
+                                    children: [new TextRun({ text: token.text, italics: true, color: "555555", font: FONT, size: 22 })],
+                                    indent: { left: 720 },
+                                    border: { left: { style: BorderStyle.SINGLE, size: 8, color: THEME_COLOR, space: 4 } },
+                                    spacing: { before: 100, after: 100 }
+                                }));
+                                break;
+                            case 'hr':
+                                children.push(new Paragraph({ border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } }, spacing: { before: 240, after: 240 } }));
+                                break;
                         }
-                    });
+                    } catch (e) { console.error(`Error processing token ${token.type}:`, e); }
+                });
 
-                    const blob = await Packer.toBlob(doc);
-                    libraries.FileSaver(blob, 'markdown_export.docx');
-                } catch (error) {
-                    showError(`Word 轉換錯誤: ${error.message}`);
-                    console.error('Word conversion error:', error);
-                } finally {
-                    setButtonState(elements.downloadWordBtn, false, '下載 Word');
+                const doc = new Document({ sections: [{ children }] });
+                const blob = await Packer.toBlob(doc);
+                libraries.FileSaver(blob, 'markdown_export.docx');
+            } catch (error) { showError(`Word 轉換錯誤: ${error.message}`); console.error('Word conversion error:', error); }
+            finally { setButtonState(elements.downloadWordBtn, false, '下載 Word'); }
+        }
+
+        // --- OPTIMIZED PPT EXPORT ---
+        async function downloadPpt() {
+            if (!libraries.PptxGenJS || !libraries.FileSaver) { showError('所需函式庫未載入，無法下載 PPT！'); return; }
+            if (!state.cachedTokens) { showError('請先輸入並轉換 Markdown！'); return; }
+            setButtonState(elements.downloadPptBtn, true, '生成中...');
+            
+            try {
+                const pptx = new libraries.PptxGenJS();
+                pptx.layout = 'LAYOUT_16x9';
+                const THEME_COLOR = "4B6CB7";
+                const TEXT_COLOR = "333333";
+                const BG_COLOR = "FFFFFF";
+                const FONT_FACE = "Inter";
+
+                const TITLE_STYLE = { x: 0.5, y: 0.5, w: '90%', h: 1.0, fontSize: 36, bold: true, color: THEME_COLOR, align: 'center', fontFace: FONT_FACE };
+                const SUBTITLE_STYLE = { x: 0.5, y: 1.5, w: '90%', fontSize: 20, color: '666666', align: 'center', fontFace: FONT_FACE };
+                const SLIDE_TITLE_STYLE = { x: 0.5, y: 0.25, w: '90%', h: 0.75, fontSize: 32, bold: true, color: THEME_COLOR, fontFace: FONT_FACE };
+                const BODY_STYLE = { x: 0.5, y: 1.2, w: '90%', h: 5.0, fontSize: 18, color: TEXT_COLOR, fontFace: FONT_FACE, lineSpacing: 28 };
+                const CODE_STYLE = { x: 0.5, y: 1.2, w: '90%', h: 5.0, fill: { color: "F3F4F6" }, fontFace: "Courier New", fontSize: 12, color: "1F2937", lineSpacing: 20 };
+
+                let slide = null;
+                let y = BODY_STYLE.y;
+
+                function newSlide(title) {
+                    slide = pptx.addSlide();
+                    slide.background = { color: BG_COLOR };
+                    if (title) {
+                        slide.addText(title, SLIDE_TITLE_STYLE);
+                    }
+                    y = BODY_STYLE.y;
                 }
+                
+                // Handle title slide automatically
+                const firstH1Index = state.cachedTokens.findIndex(t => t.type === 'heading' && t.depth === 1);
+                if(firstH1Index !== -1) {
+                    const titleToken = state.cachedTokens[firstH1Index];
+                    newSlide();
+                    slide.addText(titleToken.text, TITLE_STYLE);
+
+                    const nextToken = state.cachedTokens[firstH1Index + 1];
+                    if (nextToken && nextToken.type === 'paragraph') {
+                        slide.addText(nextToken.text, SUBTITLE_STYLE);
+                    }
+                } else {
+                    newSlide("簡報");
+                }
+
+                state.cachedTokens.forEach((token, index) => {
+                     if (index <= firstH1Index || (firstH1Index !== -1 && index === firstH1Index + 1 && state.cachedTokens[index].type === 'paragraph')) {
+                        return; // Skip tokens used for title slide
+                    }
+
+                    if ((token.type === 'heading' && token.depth === 1) || token.type === 'hr') {
+                         newSlide(token.type === 'heading' ? token.text : null);
+                         return;
+                    }
+
+                    if (!slide) newSlide();
+                    
+                    // Check for overflow before adding content
+                    if (y > 5.5) newSlide();
+
+                    switch (token.type) {
+                        case 'heading':
+                            slide.addText(token.text, { ...BODY_STYLE, y, fontSize: 28 - token.depth * 2, bold: true, h: 0.5 });
+                            y += 0.6;
+                            break;
+                        case 'paragraph':
+                            slide.addText(token.text, { ...BODY_STYLE, y, h: (token.text.length / 80 + 1) * 0.4 });
+                            y += (token.text.length / 80 + 1) * 0.4;
+                            break;
+                        case 'list':
+                            const listItems = token.items.map(item => ({ text: item.text }));
+                            slide.addText(listItems, { ...BODY_STYLE, y, bullet: { type: token.ordered ? 'number' : 'bullet' }, h: token.items.length * 0.4 });
+                            y += token.items.length * 0.4;
+                            break;
+                        case 'code':
+                            slide.addText(token.text, { ...CODE_STYLE, y, h: (token.text.split('\n').length * 0.3) + 0.2 });
+                            y += (token.text.split('\n').length * 0.3) + 0.3;
+                            break;
+                        case 'table':
+                            const tableRows = [token.header.map(cell => ({ text: cell.text, options: { bold: true, fill: THEME_COLOR, color: "FFFFFF", align: 'center' } })), ...token.rows.map(row => row.map(cell => cell.text))];
+                            slide.addTable(tableRows, { x: 0.5, y, w: '90%', rowband_odd: { fill: 'F9FAFB' }, border: { type: 'solid', pt: 1, color: 'CCCCCC' } });
+                            y += tableRows.length * 0.4;
+                            break;
+                    }
+                });
+
+                // Add a concluding slide
+                const finalSlide = pptx.addSlide();
+                finalSlide.background = { color: 'F3F4F6' };
+                finalSlide.addText('感謝聆聽', { ...TITLE_STYLE, color: TEXT_COLOR, y: '40%' });
+                
+                await pptx.writeFile({ fileName: 'markdown_export.pptx' });
+            } catch (error) {
+                showError(`PPT 生成錯誤: ${error.message}`);
+                console.error('PPT generation error:', error);
+            } finally {
+                setButtonState(elements.downloadPptBtn, false, '下載 PPT');
             }
+        }
 
-            // Download PPT
-            async function downloadPpt() {
-                if (!libraries.PptxGenJS) {
-                    showError('PptxGenJS 未載入，無法下載！請檢查網絡連接。');
-                    return;
-                }
-                if (!libraries.FileSaver) {
-                    showError('FileSaver.js 未載入，無法下載！請檢查網絡連接。');
-                    return;
-                }
-                if (!state.cachedTokens) {
-                    showError('請先輸入並轉換 Markdown！');
-                    return;
-                }
+        function setButtonState(button, isLoading, text) {
+            button.disabled = isLoading;
+            const iconClass = isLoading ? 'fa-spinner fa-spin' : button.querySelector('i').className.split(' ').filter(c => c !== 'fa-spinner' && c !== 'fa-spin').join(' ');
+            button.innerHTML = `<i class="${iconClass} mr-2"></i>${text}`;
+        }
 
-                setButtonState(elements.downloadPptBtn, true, '生成中...');
-                try {
-                    const pptx = new libraries.PptxGenJS();
-                    pptx.layout = 'LAYOUT_16x9';
-                    pptx.theme = { bodyFont: 'Arial', headFont: 'Arial' };
+        function showError(message) {
+            alert(message);
+            console.error(message);
+        }
+        
+        // NEW: Mascot particle effect function
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            document.body.appendChild(particle);
+            const colors = ['#4b6cb7', '#3b5998', '#1f2937', '#e5e7eb', '#6b7280'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.background = color;
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            const destinationX = (Math.random() - 0.5) * 300;
+            const destinationY = (Math.random() - 0.5) * 300;
+            const rotation = Math.random() * 520;
+            requestAnimationFrame(() => {
+                particle.style.transform = `translate(${destinationX}px, ${destinationY}px) rotate(${rotation}deg)`;
+                particle.style.opacity = '0';
+            });
+            setTimeout(() => { particle.remove(); }, 1000);
+        }
 
-                    let currentSlide = pptx.addSlide();
-                    currentSlide.background = { color: 'FFFFFF' };
-                    currentSlide.addText('簡報開始', { 
-                        x: 0.5, 
-                        y: 0.5, 
-                        w: '90%', 
-                        h: 1.0, 
-                        fontSize: 36, 
-                        bold: true, 
-                        color: '336699', 
-                        align: 'center',
-                        fontFace: 'Arial'
-                    });
-                    let contentY = 1.5;
-                    let slideCount = 1;
-
-                    state.cachedTokens.forEach(token => {
-                        try {
-                            if (token.type === 'heading' && token.depth === 1 || token.type === 'hr') {
-                                if (slideCount > 1 || token.type === 'heading') {
-                                    currentSlide = pptx.addSlide();
-                                    slideCount++;
-                                    currentSlide.background = { color: 'FFFFFF' };
-                                    contentY = 1.0;
-                                    if (token.type === 'heading') {
-                                        currentSlide.addText(token.text, { 
-                                            x: 0.5, 
-                                            y: 0.5, 
-                                            w: '90%', 
-                                            h: 1.0, 
-                                            fontSize: 36, 
-                                            bold: true, 
-                                            color: '336699', 
-                                            align: 'center',
-                                            fontFace: 'Arial'
-                                        });
-                                        contentY = 1.5;
-                                    }
-                                }
-                            } else {
-                                switch (token.type) {
-                                    case 'heading':
-                                        currentSlide.addText(token.text, { 
-                                            x: 0.5, 
-                                            y: contentY, 
-                                            w: '90%', 
-                                            fontSize: 28 - token.depth * 2, 
-                                            bold: true, 
-                                            color: '000000',
-                                            fontFace: 'Arial'
-                                        });
-                                        contentY += 0.6;
-                                        break;
-                                    case 'paragraph':
-                                        currentSlide.addText(token.text, { 
-                                            x: 0.5, 
-                                            y: contentY, 
-                                            w: '90%', 
-                                            fontSize: 18,
-                                            color: '333333',
-                                            fontFace: 'Arial',
-                                            lineSpacing: 28
-                                        });
-                                        contentY += 0.4;
-                                        break;
-                                    case 'list':
-                                        token.items.forEach(item => {
-                                            currentSlide.addText(item.text, { 
-                                                x: 0.5, 
-                                                y: contentY, 
-                                                w: '90%', 
-                                                fontSize: 18,
-                                                color: '333333',
-                                                fontFace: 'Arial',
-                                                bullet: { type: token.ordered ? 'number' : 'bullet', style: token.ordered ? 'decimal' : 'disc' },
-                                                indentLevel: 0
-                                            });
-                                            contentY += 0.4;
-                                        });
-                                        break;
-                                    case 'code':
-                                        currentSlide.addShape(pptx.shapes.RECTANGLE, { 
-                                            x: 0.5, 
-                                            y: contentY, 
-                                            w: '90%', 
-                                            h: 0.8, 
-                                            fill: { color: 'F5F5F5' }
-                                        });
-                                        currentSlide.addText(token.text, { 
-                                            x: 0.6, 
-                                            y: contentY + 0.1, 
-                                            w: '88%', 
-                                            fontSize: 12,
-                                            fontFace: 'Courier New',
-                                            color: '000000'
-                                        });
-                                        contentY += 1.0;
-                                        break;
-                                    case 'table':
-                                        const rows = [
-                                            token.header.map(cell => ({ 
-                                                text: cell.text, 
-                                                options: { 
-                                                    fontSize: 18, 
-                                                    bold: true, 
-                                                    fill: 'E8ECEF', 
-                                                    fontFace: 'Arial',
-                                                    align: 'center'
-                                                } 
-                                            })),
-                                            ...token.rows.map(row => row.map(cell => ({ 
-                                                text: cell.text, 
-                                                options: { 
-                                                    fontSize: 16, 
-                                                    fontFace: 'Arial',
-                                                    align: 'left'
-                                                } 
-                                            })))
-                                        ];
-                                        currentSlide.addTable(rows, { 
-                                            x: 0.5, 
-                                            y: contentY, 
-                                            w: '90%', 
-                                            border: { type: 'solid', pt: 1, color: '999999' },
-                                            colW: rows[0].map(() => 1.5),
-                                            autoPage: true
-                                        });
-                                        contentY += (rows.length * 0.3) + 0.3;
-                                        break;
-                                    case 'blockquote':
-                                        currentSlide.addShape(pptx.shapes.RECTANGLE, { 
-                                            x: 0.5, 
-                                            y: contentY, 
-                                            w: 0.1, 
-                                            h: 0.5, 
-                                            fill: { color: '4B6CB7' }
-                                        });
-                                        currentSlide.addText(token.text, { 
-                                            x: 0.7, 
-                                            y: contentY, 
-                                            w: '88%', 
-                                            fontSize: 18,
-                                            italic: true,
-                                            color: '595959',
-                                            fontFace: 'Arial'
-                                        });
-                                        contentY += 0.6;
-                                        break;
-                                }
-                            }
-                            // Prevent content overflow
-                            if (contentY > 6.0) {
-                                currentSlide = pptx.addSlide();
-                                slideCount++;
-                                currentSlide.background = { color: 'FFFFFF' };
-                                contentY = 0.5;
-                            }
-                        } catch (error) {
-                            console.error(`Error processing token ${token.type}:`, error);
-                            currentSlide.addText(`[Error: ${token.type}]`, { 
-                                x: 0.5, 
-                                y: contentY, 
-                                w: '90%', 
-                                fontSize: 12, 
-                                color: 'FF0000',
-                                fontFace: 'Arial'
-                            });
-                            contentY += 0.3;
-                        }
-                    });
-
-                    await pptx.writeFile({ fileName: 'markdown_export.pptx' });
-                } catch (error) {
-                    showError(`PPT 生成錯誤: ${error.message}`);
-                    console.error('PPT generation error:', error);
-                } finally {
-                    setButtonState(elements.downloadPptBtn, false, '下載 PPT');
-                }
-            }
-
-            // Button state management
-            function setButtonState(button, isLoading, text) {
-                button.disabled = isLoading;
-                let iconClass;
-                switch (button.id) {
-                    case 'convert-btn': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'; break;
-                    case 'download-html': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-code'; break;
-                    case 'download-word': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-word'; break;
-                    case 'download-ppt': iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-file-powerpoint'; break;
-                    default: iconClass = 'fa-sync-alt';
-                }
-                button.innerHTML = `<i class="fas ${iconClass} mr-2"></i>${text}`;
-            }
-
-            // Error handling
-            function showError(message) {
-                alert(message);
-                console.error(message);
-            }
-
-            // Start application
-            document.addEventListener('DOMContentLoaded', init);
-        })();
-    </script>
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+</script>
 </body>
 </html>
+
